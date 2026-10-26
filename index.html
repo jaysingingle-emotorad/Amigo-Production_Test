@@ -866,22 +866,12 @@
         // Step 2: Auth Handshake (SHA-256 + PIN 0000)
         setStepStatus("stepAuth", "active");
         await authCharacteristic.startNotifications();
-
-        // Setup notification reply listener
-        const authReplyPromise = new Promise((resolve, reject) => {
-          const timer = setTimeout(() => reject(new Error("Module did not reply to Auth in 4s")), 4000);
-          const listener = (event) => {
-            const buf = new Uint8Array(event.target.value.buffer);
-            authCharacteristic.removeEventListener('characteristicvaluechanged', listener);
-            clearTimeout(timer);
-            resolve(buf);
-          };
-          authCharacteristic.addEventListener('characteristicvaluechanged', listener);
-        });
+        await delay(150);
 
         // Read challenge (first 8 bytes)
         const challengeData = await authCharacteristic.readValue();
         const challengeBytes = new Uint8Array(challengeData.buffer, challengeData.byteOffset, 8);
+        console.log("Auth Challenge received:", Array.from(challengeBytes).map(b => b.toString(16).padStart(2, '0')).join(''));
 
         // SHA-256 (SECRET + challenge + "0000")
         const pinBytes = new TextEncoder().encode(DEFAULT_PIN);
@@ -897,6 +887,23 @@
         const responsePayload = new Uint8Array(9);
         responsePayload[0] = 0x01;
         responsePayload.set(hashBytes.subarray(0, 8), 1);
+        console.log("Sending Auth response:", Array.from(responsePayload).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+        // Setup notification reply listener AFTER readValue() so it only catches the genuine hardware notification reply
+        const authReplyPromise = new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("Module did not reply to Auth in 4s")), 4000);
+          const listener = (event) => {
+            const buf = new Uint8Array(event.target.value.buffer, event.target.value.byteOffset, event.target.value.byteLength);
+            console.log("Auth notification received:", Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join(''));
+            // Hardware reply code is 1-2 bytes (0x02 success, 0x10 wrong pin, 0x12 locked out)
+            if (buf.length > 0 && buf.length <= 4) {
+              authCharacteristic.removeEventListener('characteristicvaluechanged', listener);
+              clearTimeout(timer);
+              resolve(buf);
+            }
+          };
+          authCharacteristic.addEventListener('characteristicvaluechanged', listener);
+        });
 
         // Write Auth response with response
         if (authCharacteristic.writeValueWithResponse) {
