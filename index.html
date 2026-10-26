@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMotorad Amigo - PCB & Display Production Tester</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --pass: #10b981;
+      --pass-bg: #064e3b;
+      --pass-border: #059669;
+      --fail: #ef4444;
+      --fail-bg: #7f1d1d;
+      --fail-border: #dc2626;
+      --warn: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo-area h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-jig {
+      background: #3b82f620;
+      color: #60a5fa;
+      border: 1px solid #3b82f640;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+    }
+
+    .stat-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 6px 14px;
+      text-align: center;
+    }
+
+    .stat-pill span {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .stat-pill strong {
+      font-size: 18px;
+    }
+
+    .stat-pass strong { color: var(--pass); }
+    .stat-fail strong { color: var(--fail); }
+
+    /* Main Hero Banner / Test Status */
+    .hero-card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 20px;
+      padding: 36px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 320px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card.pass {
+      background: var(--pass-bg);
+      border-color: var(--pass);
+      box-shadow: 0 0 40px rgba(16, 185, 129, 0.35);
+    }
+
+    .hero-card.fail {
+      background: var(--fail-bg);
+      border-color: var(--fail);
+      box-shadow: 0 0 40px rgba(239, 68, 68, 0.35);
+    }
+
+    .hero-card.testing {
+      border-color: var(--accent);
+      box-shadow: 0 0 30px rgba(37, 99, 235, 0.25);
+    }
+
+    .hero-icon {
+      font-size: 64px;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+
+    .hero-title {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .hero-sub {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 550px;
+      margin-bottom: 24px;
+    }
+
+    .hero-card.pass .hero-sub,
+    .hero-card.fail .hero-sub {
+      color: #ffffff;
+      opacity: 0.95;
+    }
+
+    /* Big Action Buttons */
+    .btn-action {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 16px 40px;
+      font-size: 18px;
+      font-weight: 800;
+      border-radius: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-action:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+    }
+
+    .btn-action:active {
+      transform: translateY(0);
+    }
+
+    .btn-pass-next {
+      background: #059669;
+      box-shadow: 0 4px 20px rgba(5, 150, 105, 0.5);
+    }
+
+    .btn-pass-next:hover {
+      background: #10b981;
+    }
+
+    .btn-fail-retry {
+      background: #dc2626;
+      box-shadow: 0 4px 20px rgba(220, 38, 38, 0.5);
+    }
+
+    .btn-fail-retry:hover {
+      background: #ef4444;
+    }
+
+    .shortcut-hint {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .hero-card.pass .shortcut-hint,
+    .hero-card.fail .shortcut-hint {
+      color: #e2e8f0;
+    }
+
+    /* Live Progress Checklist */
+    .checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 440px;
+      margin: 16px 0;
+      text-align: left;
+    }
+
+    .check-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.2);
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .check-step.active {
+      color: #93c5fd;
+      border-color: #3b82f650;
+      background: #1e3a8a30;
+    }
+
+    .check-step.done {
+      color: #6ee7b7;
+      border-color: #05966950;
+    }
+
+    .check-step.failed {
+      color: #fca5a5;
+      border-color: #dc262650;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Info Grid (Visible when connected) */
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+
+    .detail-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .detail-card label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .detail-card value {
+      font-size: 20px;
+      font-weight: 800;
+      display: block;
+    }
+
+    /* Manual Controls Card */
+    .controls-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    /* QA History Table */
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .table-header h2 {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #33415540;
+    }
+
+    .tag-pass {
+      background: #064e3b;
+      color: #34d399;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .tag-fail {
+      background: #7f1d1d;
+      color: #f87171;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    /* Footer Note */
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* Mobile Phone Touch & Responsive Layout */
+    @media (max-width: 640px) {
+      body {
+        padding: 12px 8px;
+      }
+      .container {
+        gap: 14px;
+      }
+      header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .logo-area {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .logo-area h1 {
+        font-size: 20px;
+      }
+      .stats-bar {
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .stat-pill {
+        flex: 1;
+        padding: 6px 4px;
+      }
+      .stat-pill strong {
+        font-size: 16px;
+      }
+      .hero-card {
+        padding: 24px 14px;
+        min-height: 260px;
+        border-radius: 16px;
+      }
+      .hero-icon {
+        font-size: 48px;
+        margin-bottom: 8px;
+      }
+      .hero-title {
+        font-size: 24px;
+      }
+      .hero-sub {
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      .btn-action {
+        width: 100%;
+        padding: 18px 16px;
+        font-size: 17px;
+        justify-content: center;
+        border-radius: 12px;
+      }
+      .shortcut-hint {
+        display: none !important; /* Hide keyboard shortcut on mobile phones */
+      }
+      .checklist {
+        margin: 12px 0;
+        max-width: 100%;
+      }
+      .check-step {
+        font-size: 13px;
+        padding: 8px 10px;
+      }
+      .details-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .detail-card {
+        padding: 10px;
+      }
+      .detail-card value {
+        font-size: 17px;
+      }
+      .controls-card {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px;
+      }
+      .controls-card > div:last-child {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+      .controls-card .btn-secondary {
+        width: 100%;
+        padding: 12px;
+        font-size: 14px;
+        text-align: center;
+      }
+      .table-card {
+        padding: 14px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Header & Shift Counter -->
+    <header>
+      <div class="logo-area">
+        <h1>🛵 EMotorad Amigo <span class="badge-jig">Test Jig</span></h1>
+      </div>
+      <div class="stats-bar">
+        <div class="stat-pill stat-total">
+          <span>Tested</span>
+          <strong id="statTotal">0</strong>
+        </div>
+        <div class="stat-pill stat-pass">
+          <span>Pass</span>
+          <strong id="statPass">0</strong>
+        </div>
+        <div class="stat-pill stat-fail">
+          <span>Fail</span>
+          <strong id="statFail">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Visual Hero Status Area -->
+    <div id="heroCard" class="hero-card">
+      <div id="heroIcon" class="hero-icon">🔍</div>
+      <div id="heroTitle" class="hero-title">Ready for Next Board</div>
+      <div id="heroSub" class="hero-sub">
+        Power ON the ESP32 board on the test jig, then click the button below to connect, authenticate and verify display.
+      </div>
+
+      <!-- Live Checklist (shown during test) -->
+      <div id="checklist" class="checklist" style="display: none;">
+        <div id="stepScan" class="check-step">
+          <span class="step-icon">○</span>
+          <span>1. Discover & Connect ("Amigo-*")</span>
+        </div>
+        <div id="stepAuth" class="check-step">
+          <span class="step-icon">○</span>
+          <span>2. Auth Handshake (SHA-256 + PIN 0000)</span>
+        </div>
+        <div id="stepTelem" class="check-step">
+          <span class="step-icon">○</span>
+          <span>3. Subscribe to Telemetry</span>
+        </div>
+        <div id="stepPower" class="check-step">
+          <span class="step-icon">○</span>
+          <span>4. Send Display POWER ON [14, 1, 1]</span>
+        </div>
+        <div id="stepVerify" class="check-step">
+          <span class="step-icon">○</span>
+          <span>5. Verify Display Active (Byte 1: bit 0x40)</span>
+        </div>
+      </div>
+
+      <!-- Action Button Container -->
+      <button id="btnMainAction" class="btn-action" onclick="handleMainAction()">
+        <span>⚡ Scan & Verify Board</span>
+      </button>
+      <div id="shortcutHint" class="shortcut-hint">Press <strong>[Spacebar]</strong> to start</div>
+
+      <!-- Scan Filter Option & Phone Warning -->
+      <div style="margin-top: 18px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <label style="font-size: 13px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <input type="checkbox" id="chkAllDevices" style="cursor: pointer;">
+          <span>Show all nearby Bluetooth devices (Disable name filter)</span>
+        </label>
+        <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; padding: 6px 14px; border-radius: 8px; font-size: 12px; max-width: 520px;">
+          ⚠️ <strong>Disconnect Phone First:</strong> If your phone is connected to the ESP32, the board stops broadcasting and the laptop cannot find it!
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Hardware Data Readout (Visible after connection) -->
+    <div id="detailsGrid" class="details-grid" style="display: none;">
+      <div class="detail-card">
+        <label>Device Name</label>
+        <value id="valDeviceName">--</value>
+      </div>
+      <div class="detail-card">
+        <label>Display / Power</label>
+        <value id="valPowerState" style="color: var(--text-muted);">--</value>
+      </div>
+      <div class="detail-card">
+        <label>Battery Level</label>
+        <value id="valBattery">--%</value>
+      </div>
+      <div class="detail-card">
+        <label>Motor Current</label>
+        <value id="valCurrent">0.0 A</value>
+      </div>
+      <div class="detail-card">
+        <label>Test Duration</label>
+        <value id="valDuration">0.0 s</value>
+      </div>
+    </div>
+
+    <!-- Manual Overrides Card -->
+    <div id="manualControls" class="controls-card" style="display: none;">
+      <div>
+        <strong style="font-size: 14px;">Manual Verification Controls</strong>
+        <p style="font-size: 12px; color: var(--text-muted);">Optional manual controls while connected to current board.</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-secondary" onclick="sendPowerOff()">Turn OFF [14, 1, 0]</button>
+        <button class="btn-secondary" onclick="sendPowerOn()">Turn ON [14, 1, 1]</button>
+        <button class="btn-secondary" style="background: #dc2626;" onclick="disconnectCurrentDevice()">Disconnect Board</button>
+      </div>
+    </div>
+
+    <!-- QA Batch Shift History Log Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Production Batch Log</h2>
+        <button class="btn-secondary" onclick="exportCsv()">📥 Export QA CSV Report</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Device Name</th>
+            <th>Auth Status</th>
+            <th>Display ON</th>
+            <th>Battery</th>
+            <th>Time</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody">
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No boards tested yet in this session.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer>
+      EMotorad Quality Assurance & Production JIG System • Web Bluetooth Standard (Chrome / Edge)
+    </footer>
+  </div>
+
+  <script>
+    // --- Amigo Hardware Protocol Constants ---
+    const SERVICE_UUID        = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const TELEMETRY_CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const COMMAND_CHAR_UUID   = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    const AUTH_CHAR_UUID      = "6e400005-b5a3-f393-e0a9-e50e24dcca9e";
+
+    // 16-byte Secret for Amigo Delivery Hardware
+    const SECRET = new Uint8Array([
+      0x4B, 0x7A, 0x11, 0xE9, 0x3C, 0x5D, 0x86, 0x2F,
+      0xA0, 0x14, 0xD7, 0x6B, 0x92, 0xF8, 0x30, 0xCE
+    ]);
+    const DEFAULT_PIN = "0000";
+
+    // --- State Variables ---
+    let currentDevice = null;
+    let authCharacteristic = null;
+    let commandCharacteristic = null;
+    let telemetryCharacteristic = null;
+
+    let testStartTime = 0;
+    let isTestRunning = false;
+    let currentTestResult = null; // 'PASS' or 'FAIL'
+
+    let shiftStats = { total: 0, pass: 0, fail: 0 };
+    let testHistory = [];
+
+    // Web Audio Sound Synth for Factory Beeps
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(type) {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'pass') {
+          // Cheerful High 2-tone Chime + Mobile Haptic
+          triggerVibration([120, 80, 120]);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+          osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.12); // A5
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.35);
+        } else if (type === 'fail') {
+          // Low Buzz + Mobile Haptic
+          triggerVibration([400]);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+          osc.frequency.linearRampToValueAtTime(140, audioCtx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.45);
+        }
+      } catch (e) {
+        console.warn("Audio chime prevented:", e);
+      }
+    }
+
+    // Mobile Haptic Feedback
+    function triggerVibration(pattern) {
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate(pattern); } catch (e) {}
+      }
+    }
+
+    // Screen Wake Lock (keeps phone screen on during testing shift)
+    let wakeLock = null;
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator && !wakeLock) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => { wakeLock = null; });
+        } catch (e) {
+          console.log("Wake Lock request skipped:", e);
+        }
+      }
+    }
+
+    // Keyboard spacebar shortcut
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !e.repeat) {
+        // Prevent page scroll
+        e.preventDefault();
+        handleMainAction();
+      }
+    });
+
+    function handleMainAction() {
+      if (isTestRunning) return;
+      requestWakeLock();
+
+      if (currentTestResult === 'PASS') {
+        // Prepare for next board: cleanly disconnect previous
+        disconnectCurrentDevice();
+        resetToReadyState();
+      } else {
+        // Start new test
+        startBoardVerification();
+      }
+    }
+
+    function resetToReadyState() {
+      currentTestResult = null;
+      isTestRunning = false;
+
+      const hero = document.getElementById("heroCard");
+      hero.className = "hero-card";
+      document.getElementById("heroIcon").innerText = "🔍";
+      document.getElementById("heroTitle").innerText = "Ready for Next Board";
+      document.getElementById("heroSub").innerText = "Power ON the ESP32 board on the test jig, then click below to verify.";
+
+      const btn = document.getElementById("btnMainAction");
+      btn.style.display = "inline-flex";
+      btn.className = "btn-action";
+      btn.innerHTML = "<span>⚡ Scan & Verify Board</span>";
+
+      const hint = document.getElementById("shortcutHint");
+      hint.style.display = "block";
+      hint.innerHTML = "Press <strong>[Spacebar]</strong> to start";
+      document.getElementById("checklist").style.display = "none";
+      document.getElementById("detailsGrid").style.display = "none";
+      document.getElementById("manualControls").style.display = "none";
+
+      resetChecklist();
+    }
+
+    function resetChecklist() {
+      ["stepScan", "stepAuth", "stepTelem", "stepPower", "stepVerify"].forEach(id => {
+        const el = document.getElementById(id);
+        el.className = "check-step";
+        el.querySelector(".step-icon").innerHTML = "○";
+      });
+    }
+
+    function setStepStatus(stepId, state) {
+      const el = document.getElementById(stepId);
+      if (!el) return;
+      el.className = `check-step ${state}`;
+      const icon = el.querySelector(".step-icon");
+      if (state === 'active') icon.innerHTML = `<div class="spinner"></div>`;
+      if (state === 'done') icon.innerHTML = `✓`;
+      if (state === 'failed') icon.innerHTML = `✗`;
+    }
+
+    // --- Main Verification Flow ---
+    async function startBoardVerification() {
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth is not supported on this browser! Please open in Google Chrome or Microsoft Edge.");
+        return;
+      }
+
+      isTestRunning = true;
+      testStartTime = performance.now();
+      resetChecklist();
+
+      // UI state: Testing
+      const hero = document.getElementById("heroCard");
+      hero.className = "hero-card testing";
+      document.getElementById("heroIcon").innerText = "🔄";
+      document.getElementById("heroTitle").innerText = "Testing Board...";
+      document.getElementById("heroSub").innerText = "Follow the browser prompt to select your Amigo board.";
+      document.getElementById("checklist").style.display = "flex";
+      document.getElementById("btnMainAction").style.display = "none";
+      document.getElementById("shortcutHint").style.display = "none";
+
+      let deviceName = "Unknown";
+      let authStatus = "Pending";
+      let displayVerified = false;
+      let finalBattery = 0;
+
+      try {
+        // Step 1: Scan & Connect
+        setStepStatus("stepScan", "active");
+
+        const showAll = document.getElementById("chkAllDevices") && document.getElementById("chkAllDevices").checked;
+        const scanOptions = showAll
+          ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID, "generic_access"] }
+          : {
+              filters: [
+                { namePrefix: "Amigo-" },
+                { namePrefix: "amigo-" },
+                { namePrefix: "AMIGO-" },
+                { services: [SERVICE_UUID] }
+              ],
+              optionalServices: [SERVICE_UUID, "generic_access"]
+            };
+
+        currentDevice = await navigator.bluetooth.requestDevice(scanOptions);
+
+        deviceName = currentDevice.name || "Amigo (4C:11:AE:5C:A4:76)";
+        document.getElementById("valDeviceName").innerText = deviceName;
+        document.getElementById("detailsGrid").style.display = "grid";
+
+        currentDevice.addEventListener('gattserverdisconnected', onDeviceDisconnected);
+
+        const server = await currentDevice.gatt.connect();
+
+        // Try reading real device name directly from Generic Access Service if broadcast name was missing
+        try {
+          const gapService = await server.getPrimaryService("generic_access");
+          const gapNameChar = await gapService.getCharacteristic("gap.device_name");
+          const gapVal = await gapNameChar.readValue();
+          const decoded = new TextDecoder().decode(gapVal);
+          if (decoded && decoded.trim().length > 0) {
+            deviceName = decoded.trim();
+            document.getElementById("valDeviceName").innerText = deviceName;
+          }
+        } catch (gapErr) {
+          console.log("GAP name read skipped:", gapErr);
+        }
+
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        authCharacteristic = await service.getCharacteristic(AUTH_CHAR_UUID);
+        commandCharacteristic = await service.getCharacteristic(COMMAND_CHAR_UUID);
+        telemetryCharacteristic = await service.getCharacteristic(TELEMETRY_CHAR_UUID);
+        setStepStatus("stepScan", "done");
+
+        // Step 2: Auth Handshake (SHA-256 + PIN 0000)
+        setStepStatus("stepAuth", "active");
+        await authCharacteristic.startNotifications();
+
+        // Setup notification reply listener
+        const authReplyPromise = new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("Module did not reply to Auth in 4s")), 4000);
+          const listener = (event) => {
+            const buf = new Uint8Array(event.target.value.buffer);
+            authCharacteristic.removeEventListener('characteristicvaluechanged', listener);
+            clearTimeout(timer);
+            resolve(buf);
+          };
+          authCharacteristic.addEventListener('characteristicvaluechanged', listener);
+        });
+
+        // Read challenge (first 8 bytes)
+        const challengeData = await authCharacteristic.readValue();
+        const challengeBytes = new Uint8Array(challengeData.buffer, challengeData.byteOffset, 8);
+
+        // SHA-256 (SECRET + challenge + "0000")
+        const pinBytes = new TextEncoder().encode(DEFAULT_PIN);
+        const dataToHash = new Uint8Array(16 + 8 + 4);
+        dataToHash.set(SECRET, 0);
+        dataToHash.set(challengeBytes, 16);
+        dataToHash.set(pinBytes, 24);
+
+        const hashBuffer = await crypto.subtle.digest("SHA-256", dataToHash);
+        const hashBytes = new Uint8Array(hashBuffer);
+
+        // Response: [0x01] + first 8 bytes of hash
+        const responsePayload = new Uint8Array(9);
+        responsePayload[0] = 0x01;
+        responsePayload.set(hashBytes.subarray(0, 8), 1);
+
+        // Write Auth response with response
+        if (authCharacteristic.writeValueWithResponse) {
+          await authCharacteristic.writeValueWithResponse(responsePayload);
+        } else {
+          await authCharacteristic.writeValue(responsePayload);
+        }
+
+        const reply = await authReplyPromise;
+        if (reply.length === 0 || reply[0] !== 0x02) {
+          const errCode = reply.length > 0 ? `0x${reply[0].toString(16).padStart(2, '0')}` : 'empty';
+          throw new Error(`Authentication rejected by hardware (Reply: ${errCode})`);
+        }
+        authStatus = "PASS (0x02)";
+        setStepStatus("stepAuth", "done");
+
+        // Step 3: Subscribe to Telemetry
+        setStepStatus("stepTelem", "active");
+        // Brief pause to allow BLE stack to clear internal write buffer
+        await delay(200);
+        await telemetryCharacteristic.startNotifications();
+        setStepStatus("stepTelem", "done");
+
+        // Setup Telemetry listener to catch the Display ON flag
+        let bikeOnResolver;
+        const bikeOnPromise = new Promise((resolve, reject) => {
+          bikeOnResolver = resolve;
+          setTimeout(() => reject(new Error("Timeout: Display ON flag (0x40) was not confirmed in telemetry")), 5000);
+        });
+
+        const telemetryListener = (event) => {
+          const val = new Uint8Array(event.target.value.buffer, event.target.value.byteOffset, event.target.value.byteLength);
+          if (val.length >= 11) {
+            const flags = val[1];
+            const isBikeOn = (flags & 0x40) !== 0;
+            const battery = val[3];
+            finalBattery = battery;
+
+            const rawCurrent = (val[4] | (val[5] << 8));
+            const currentAmps = (rawCurrent > 32767 ? rawCurrent - 65536 : rawCurrent) * 0.1;
+
+            document.getElementById("valBattery").innerText = `${battery}%`;
+            document.getElementById("valCurrent").innerText = `${currentAmps.toFixed(1)} A`;
+
+            const pwrEl = document.getElementById("valPowerState");
+            if (isBikeOn) {
+              pwrEl.innerText = "ONLINE (ON)";
+              pwrEl.style.color = "var(--pass)";
+              bikeOnResolver(true);
+            } else {
+              pwrEl.innerText = "OFF";
+              pwrEl.style.color = "var(--warn)";
+            }
+          }
+        };
+        telemetryCharacteristic.addEventListener('characteristicvaluechanged', telemetryListener);
+
+        // Step 4: Send Power ON Command [14, 1, 1]
+        setStepStatus("stepPower", "active");
+        const powerOnCmd = new Uint8Array([14, 1, 1]);
+        if (commandCharacteristic.writeValueWithoutResponse) {
+          await commandCharacteristic.writeValueWithoutResponse(powerOnCmd);
+        } else {
+          await commandCharacteristic.writeValue(powerOnCmd);
+        }
+        setStepStatus("stepPower", "done");
+
+        // Step 5: Verify Display turned ON via Telemetry
+        setStepStatus("stepVerify", "active");
+        await bikeOnPromise;
+        displayVerified = true;
+        setStepStatus("stepVerify", "done");
+
+        // TEST PASSED!
+        const durationSec = ((performance.now() - testStartTime) / 1000).toFixed(1);
+        document.getElementById("valDuration").innerText = `${durationSec} s`;
+        showTestSuccess(deviceName, durationSec, finalBattery);
+        recordTestResult(deviceName, authStatus, true, finalBattery, durationSec, "PASS");
+
+      } catch (err) {
+        console.error("Test Error:", err);
+        const durationSec = ((performance.now() - testStartTime) / 1000).toFixed(1);
+        document.getElementById("valDuration").innerText = `${durationSec} s`;
+
+        if (err.name === 'NotFoundError' || err.message.includes('User cancelled')) {
+          // User clicked Cancel or closed the popup without picking a device
+          resetToReadyState();
+          return;
+        }
+
+        showTestFailure(deviceName, err.message);
+        recordTestResult(deviceName, authStatus, displayVerified, finalBattery, durationSec, "FAIL");
+      } finally {
+        isTestRunning = false;
+      }
+    }
+
+    // --- UI State Changes ---
+    function showTestSuccess(deviceName, durationSec, battery) {
+      currentTestResult = 'PASS';
+      playBeep('pass');
+
+      const hero = document.getElementById("heroCard");
+      hero.className = "hero-card pass";
+      document.getElementById("heroIcon").innerText = "✅";
+      document.getElementById("heroTitle").innerText = "DISPLAY VERIFIED - PASS";
+      document.getElementById("heroSub").innerText = 
+        `${deviceName} authenticated, display switched ON, and telemetry confirmed in ${durationSec}s. Battery: ${battery}%.`;
+
+      const btn = document.getElementById("btnMainAction");
+      btn.style.display = "inline-flex";
+      btn.className = "btn-action btn-pass-next";
+      btn.innerHTML = "<span>✓ TEST NEXT BOARD (Spacebar)</span>";
+
+      const hint = document.getElementById("shortcutHint");
+      hint.style.display = "block";
+      hint.innerHTML = "Press <strong>[Spacebar]</strong> to release & test next unit";
+
+      document.getElementById("manualControls").style.display = "flex";
+    }
+
+    function showTestFailure(deviceName, errorMsg) {
+      currentTestResult = 'FAIL';
+      playBeep('fail');
+
+      const hero = document.getElementById("heroCard");
+      hero.className = "hero-card fail";
+      document.getElementById("heroIcon").innerText = "❌";
+      document.getElementById("heroTitle").innerText = "TEST FAILED";
+      document.getElementById("heroSub").innerText = `Failure on ${deviceName}: ${errorMsg}`;
+
+      const btn = document.getElementById("btnMainAction");
+      btn.style.display = "inline-flex";
+      btn.className = "btn-action btn-fail-retry";
+      btn.innerHTML = "<span>🔄 RETRY BOARD TEST</span>";
+
+      const hint = document.getElementById("shortcutHint");
+      hint.style.display = "block";
+      hint.innerHTML = "Check battery power and antenna connection on jig";
+    }
+
+    // --- Manual Command Controls ---
+    async function sendPowerOff() {
+      if (!commandCharacteristic) return;
+      try {
+        const cmd = new Uint8Array([14, 1, 0]);
+        if (commandCharacteristic.writeValueWithoutResponse) {
+          await commandCharacteristic.writeValueWithoutResponse(cmd);
+        } else {
+          await commandCharacteristic.writeValue(cmd);
+        }
+      } catch (e) {
+        alert("Command failed: " + e.message);
+      }
+    }
+
+    async function sendPowerOn() {
+      if (!commandCharacteristic) return;
+      try {
+        const cmd = new Uint8Array([14, 1, 1]);
+        if (commandCharacteristic.writeValueWithoutResponse) {
+          await commandCharacteristic.writeValueWithoutResponse(cmd);
+        } else {
+          await commandCharacteristic.writeValue(cmd);
+        }
+      } catch (e) {
+        alert("Command failed: " + e.message);
+      }
+    }
+
+    function disconnectCurrentDevice() {
+      if (currentDevice && currentDevice.gatt && currentDevice.gatt.connected) {
+        currentDevice.gatt.disconnect();
+      }
+      currentDevice = null;
+    }
+
+    function onDeviceDisconnected() {
+      console.log("Device disconnected cleanly.");
+      document.getElementById("manualControls").style.display = "none";
+    }
+
+    // --- QA Record Logging ---
+    function recordTestResult(name, auth, displayOn, battery, duration, result) {
+      shiftStats.total++;
+      if (result === 'PASS') shiftStats.pass++;
+      else shiftStats.fail++;
+
+      document.getElementById("statTotal").innerText = shiftStats.total;
+      document.getElementById("statPass").innerText = shiftStats.pass;
+      document.getElementById("statFail").innerText = shiftStats.fail;
+
+      const record = {
+        id: shiftStats.total,
+        name: name,
+        auth: auth,
+        display: displayOn ? 'YES' : 'NO',
+        battery: battery > 0 ? `${battery}%` : 'N/A',
+        duration: `${duration}s`,
+        result: result,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      testHistory.unshift(record);
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("logTableBody");
+      tbody.innerHTML = "";
+
+      testHistory.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>#${item.id}</strong></td>
+          <td><strong>${item.name}</strong></td>
+          <td>${item.auth}</td>
+          <td>${item.display === 'YES' ? '🟢 ON' : '🔴 OFF'}</td>
+          <td>${item.battery}</td>
+          <td>${item.timestamp} (${item.duration})</td>
+          <td><span class="${item.result === 'PASS' ? 'tag-pass' : 'tag-fail'}">${item.result}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportCsv() {
+      if (testHistory.length === 0) {
+        alert("No test records to export yet.");
+        return;
+      }
+
+      let csv = "ID,Device Name,Auth Status,Display ON,Battery,Test Duration,Result,Timestamp\n";
+      testHistory.forEach(r => {
+        csv += `"${r.id}","${r.name}","${r.auth}","${r.display}","${r.battery}","${r.duration}","${r.result}","${r.timestamp}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Amigo_Production_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function delay(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+  </script>
+</body>
+</html>
